@@ -62,16 +62,15 @@ Describe category;
      
 -- => 
 
-    SELECT  T1.CompanyName As 'Least_Selling_SupplierID',
-            COUNT(*) AS 'NO_of_orders' 
+   SELECT  T1.CompanyName As 'Least_Selling_SupplierID',
+            COUNT(distinct T3.Productid ) AS 'NO_of_orders' 
                                  FROM Suppliers T1 
 					 JOIN orderdetails T2
 						  ON T1.SupplierID = T2.SupplierID 
-					 JOIN orders T3
-						  ON T2.orderid = T3. orderid
-							WHERE Year(T3.OrderDate)= 2021
-							GROUP BY T1.SupplierID,T1.CompanyName
-							ORDER BY COUNT(*) 
+					 JOIN products T3
+						  ON T2.productid = T3. productid
+							GROUP BY T1.CompanyName
+							ORDER BY NO_of_orders
 							LIMIT 1;
 			
 		     
@@ -91,31 +90,26 @@ Describe category;
 -- 6. The leadership wants to know which is their top-selling category and least-selling category in 2021.
       
 -- =>  
-        SELECT  T1.CategoryName AS 'Least_Selling_Category',
-                ( 
-                    SELECT T1.CategoryName
-            				FROM Category T1 
-					JOIN Products T2 
-							ON T1.Categoryid = T2.Category_id 
-					JOIN orderdetails T3 
-							ON T3.Productid = T2.Productid
-					JOIN Orders T4
-							ON T4.orderid = T3.orderid
-								WHERE YEAR(T4.orderdate) = 2021  
-								GROUP BY T1.CategoryName
-								ORDER BY SUM(T4.Total_order_amount) DESC 
-								LIMIT 1 ) AS 'Top_Selling_Category'
-												FROM Category T1 
-														JOIN Products T2 
-						                                                                    ON T1.Categoryid = T2.Category_id 																								
-													    JOIN orderdetails T3 
-						                                                                    ON T3.Productid = T2.Productid																								
-														JOIN Orders T4 
-															ON T4.orderid = T3.orderid																								
-																	WHERE YEAR(T4.orderdate) = 2021																								
-																	GROUP BY T1.CategoryName																								
-																	ORDER BY SUM(T4.Total_order_amount) 
-																	LIMIT 1;
+        select(
+	select T1.CategoryName from category T1 
+          join products T2
+          on T1.categoryid= T2.category_id 
+          join orderdetails T3 
+          on T2. productid=t3.productid
+          join orders T4
+          on T4.orderid=T3.orderid
+          where year(orderdate)=2021
+          group by T1.CategoryName order by count(T4.orderid) desc limit 1 )most_Selling_Category
+          ,
+          (select T1.CategoryName from category T1 
+          join products T2
+          on T1.categoryid= T2.category_id 
+          join orderdetails T3 
+          on T2. productid=T3.productid
+          join orders T4
+          on t4.orderid=T3.orderid
+          where year(orderdate)=2021
+          group by T1.CategoryName order by count(T4.orderid) limit 1)as least_selling_category;
 
 ------------------- OR ---------------------------
 
@@ -137,7 +131,7 @@ Describe category;
 											(SELECT CategoryName FROM CategorySales WHERE SalesRankDesc = 1) AS 'Top_Selling_Category',
 											(SELECT CategoryName FROM CategorySales WHERE SalesRankAsc = 1) AS 'Least_Selling_Category';
 
--- 8.	We need to flag the Shipper companies whose average delivery time is less than 3 days to incentivize them.
+-- 8.	8. Identify the shipper companies whose average delivery time exceeds 3 days, so that they can be flagged for delivery performance improvement.
 
 -- =>          
          SELECT T1.CompanyName ,
@@ -146,7 +140,7 @@ Describe category;
         							 JOIN orders T2 
         								  ON T1.Shipperid = T2.Shipperid 
         										 GROUP BY T1.CompanyName 
-        										 HAVING AVG(DATEDIFF(DeliveryDate,ShipDate))<=3;
+        										 HAVING AVG(DATEDIFF(DeliveryDate,ShipDate))>3;
 						   
 					
 -- 9.	Find out the Average delivery time for each category by each shipper.
